@@ -67,11 +67,17 @@ public class Player implements escape.sim.Player {
     }
     
     public int getMove(List<Integer> conflicts) {
+        /*if (this.turn > this.n*1.5+15 && this.turn % 10 == 0){
+            if (this.ownedOdd != -1)
+                this.ownedOdd = -1;
+            if (this.ownedEven != -1)
+                this.ownedEven = -1;
+        }*/
         /*if (conflicts!=null){
             for (int t=0; t<conflicts.size(); ++t)
                 conflictsOdd.compute(this.lastMove, (k, v) -> v==null ? 1 : v+1);//Oddconflicts.get(i)
         }*/
-        System.out.println("conflictsEven: " + Arrays.deepToString(conflictsEven));
+        //System.out.println("conflictsEven: " + Arrays.deepToString(conflictsEven));
         if (conflicts!=null){
             //System.out.println(conflicts.toString());
             if (this.turn%2==0){
@@ -116,14 +122,16 @@ public class Player implements escape.sim.Player {
             
             else {
                 double lowerWeight = 0.0;
-                lowerWeight = Math.floor(0.8 * weightsOdd[this.lastLastMove]);
+                lowerWeight = weightsOdd[this.lastLastMove]/totalWeightOdd > 0.8 ? (0.1 * weightsOdd[this.lastLastMove]) : (0.8 * weightsOdd[this.lastLastMove]);
                 weightsOdd[this.lastLastMove] -= lowerWeight;
                 totalWeightOdd -= lowerWeight;
                 //int randomHandle = this.chooseRandom(conflicts);
                 int randomHandle = this.chooseRandomExcluding(this.ownedEven, conflicts);
 
-                System.out.println("weightsEven: " + Arrays.toString(weightsEven));
-                System.out.println("weightsOdd: " + Arrays.toString(weightsOdd));
+                //System.out.println("weightsEven: " + Arrays.toString(weightsEven));
+                //System.out.println("weightsOdd: " + Arrays.toString(weightsOdd));
+                //if (this.ownedEven != -1 && weightsOdd[this.ownedEven]/totalWeightOdd > 0.9)
+                //    this.ownedEven = -1;
                 return randomHandle;
             }
         } 
@@ -137,14 +145,22 @@ public class Player implements escape.sim.Player {
             
             else {
                 double lowerWeight = 0.0;
-                lowerWeight = Math.floor(0.8 * weightsEven[this.lastLastMove]);
+                lowerWeight = weightsEven[this.lastLastMove]/totalWeightEven > 0.8 ? (0.1 * weightsOdd[this.lastLastMove]) : (0.8 * weightsEven[this.lastLastMove]);
                 weightsEven[this.lastLastMove] -= lowerWeight;
                 totalWeightEven -= lowerWeight;
                 //int randomHandle = this.chooseRandom(conflicts);
                 int randomHandle = this.chooseRandomExcluding(this.ownedOdd,conflicts);
 
-                System.out.println("weightsEven: " + Arrays.toString(weightsEven));
-                System.out.println("weightsOdd: " + Arrays.toString(weightsOdd));
+                //System.out.println("weightsEven: " + Arrays.toString(weightsEven));
+                //System.out.println("weightsOdd: " + Arrays.toString(weightsOdd));
+                /*if (this.turn>this.n*2+20){
+                    if (weightsEven[this.lastLastMove]==1){
+                        totalWeightEven -= weightsEven[this.lastLastMove];
+                        weightsEven[this.lastLastMove] = 0;
+                    }
+                }*/
+                if (this.ownedOdd != -1 && weightsEven[this.ownedOdd]/totalWeightEven > 0.9)
+                    this.ownedOdd = -1;
                 return randomHandle;
             }
         }
@@ -228,7 +244,7 @@ public class Player implements escape.sim.Player {
 
 
         double weightMultiplier = ((this.turn%2) == 0) ? tempTotalWeightEven : tempTotalWeightOdd;
-        System.out.println("weightMult: " + weightMultiplier);
+        //System.out.println("weightMult: " + weightMultiplier);
         double random = Math.random() * weightMultiplier;
         
         for (int i=0; i<this.n; ++i){
@@ -264,7 +280,7 @@ public class Player implements escape.sim.Player {
                 weightsEven[this.lastMove] = tempConflict;
             }
         }
-        System.out.println("randomindex: :" + randomIndex);
+        //System.out.println("randomindex: :" + randomIndex);
         return randomIndex;
     }
 
