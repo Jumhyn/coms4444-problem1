@@ -18,7 +18,7 @@ import javax.tools.ToolProvider;
 public class Simulator {
     private static final String root = "escape";
     private static final String statics_root = "statics";
-    private static final int turnLimit = 100000;
+    private static final int turnLimit = 10000;
 
     private static long playerTimeout = 5000;
     private static boolean gui = false;
@@ -196,10 +196,17 @@ public class Simulator {
         for (; i < args.length; ++i) {
             switch (args[i].charAt(0)) {
                 case '-':
-                    if (args[i].equals("-p") || args[i].equals("--players")) {
+                    if (args[i].startsWith("-p") || args[i].equals("--players")) {
+                        int rep = 1;
+                        try {
+                            rep = Integer.parseInt(args[i].substring(2));
+                        } catch (Exception e) {
+                            rep = 1;
+                        }
                         while (i + 1 < args.length && args[i + 1].charAt(0) != '-') {
                             ++i;
-                            playerNames.add(args[i]);
+                            for (int k = 0; k < rep; ++ k)
+                                playerNames.add(args[i]);
                         }
                     } else if (args[i].equals("-g") || args[i].equals("--gui")) {
                         gui = true;
