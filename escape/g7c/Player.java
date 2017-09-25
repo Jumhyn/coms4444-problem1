@@ -6,6 +6,7 @@ import java.util.Random;
 
 public class Player implements escape.sim.Player {
     private boolean DEBUG = false;
+    private double RESET_COEF = 2.5;
 
     private Random rand;
     private int turn;
@@ -50,12 +51,13 @@ public class Player implements escape.sim.Player {
 
         boolean isOddTurn = (this.turn % 2) != 0;
 
-        /* Security mechanism to avoid the deadlock that happens when the only
-         * handle left in one round is the one the user owns in the other, which
-         * is the one he is not allowed to come back to.
+        /*
+         * Security mechanism to avoid the deadlock that happens when the
+         * only handle left in one round is the one the user owns in the
+         * other, which is the one he is not allowed to come back to.
          * Reset this round ownership.
          */
-        if (this.turn % n == 0) {
+        if (this.turn % (RESET_COEF*n) == 0) {
             if (isOddTurn) this.oddOwnedHandle = -1;
             else this.evenOwnedHandle = -1;
         }
@@ -116,8 +118,16 @@ public class Player implements escape.sim.Player {
 
     public int chooseNextExcluding(int excluding, List<Integer> conflicts) {
         boolean validMove;
-        int nextMove = this.nextLastMove;
-        boolean hasConflicted = conflicts.size() != 0;
+        int nextMove;
+
+        // Start the first odd movements in a random position. Also restart it
+        // every (RESET_COEF * n)+1 turns, to avoid the same players to keep
+        // conflicting.
+        if (this.nextLastMove == -1 || this.turn % (RESET_COEF*n) == 1) {
+            nextMove = this.chooseRandomExcluding(excluding, conflicts);
+        } else {
+            nextMove = this.nextLastMove;
+        }
 
         List<Integer> invalidMoves = new ArrayList<Integer>();
         invalidMoves.add(excluding);
