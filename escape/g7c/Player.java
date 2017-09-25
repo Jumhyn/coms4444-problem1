@@ -121,6 +121,8 @@ public class Player implements escape.sim.Player {
         if (this.turnsSinceReset > 0 && this.turnsSinceReset % this.n == 0) {
             this.lastOddMove = rand.nextInt(this.n);
             this.lastEvenMove = (this.lastOddMove + (this.n / 2)) % this.n;
+            Arrays.fill(this.seenPlayersEven, -1);
+            Arrays.fill(this.seenPlayersOdd, -1);
             this.turnsSinceReset = 0;
         }
         
