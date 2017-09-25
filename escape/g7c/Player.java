@@ -2,18 +2,27 @@ package escape.g7c;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 public class Player implements escape.sim.Player {
     private boolean DEBUG = false;
+    private double RESET_COEF = 2.5;
 
     private Random rand;
     private int turn;
     private int n;
-
+    
     private int lastMove = -1;
     private int nextLastMove = -1;
+    private int lastEvenMove = -1;
+    private int lastOddMove = -1;
+    private int turnsSinceReset;
+    private int evenStart;
+    private int oddStart;
     private ArrayList<Integer> moves;  // Represents the handles held in the previous turns. Zero-based.
+    private int seenPlayersEven[];
+    private int seenPlayersOdd[];
 
     private int oddOwnedHandle = -1;
     private int evenOwnedHandle = -1;
@@ -25,16 +34,31 @@ public class Player implements escape.sim.Player {
 
     public int init(int n) {
         this.turn = 0;
+        this.turnsSinceReset = 0;
         this.n = n;
         this.moves = new ArrayList<Integer>();
+        this.evenStart = 0;
+        this.oddStart = n / 2;
+        this.seenPlayersEven = new int[n];
+        Arrays.fill(this.seenPlayersEven, -1);
+        this.seenPlayersOdd = new int[n];
+        Arrays.fill(this.seenPlayersOdd, -1);
 
         return attempt(null);
     }
 
     public int attempt(List<Integer> conflicts) {
+        if (conflicts != null) {
+            this.recordResults(conflicts);
+        }
         int move = this.getMove(conflicts);
         this.nextLastMove = this.lastMove;
         this.lastMove = move;
+        if (this.turn % 2 == 0) {
+            this.lastEvenMove = move;
+        } else {
+            this.lastOddMove = move;
+        }
         this.moves.add(move);
         this.turn++;
         if (DEBUG) {
@@ -43,53 +67,99 @@ public class Player implements escape.sim.Player {
         }
         return move + 1;
     }
-
-    public int getMove(List<Integer> conflicts) {
-        boolean isFirstTurn = this.turn == 0;
-        if (isFirstTurn) return 0;
-
-        boolean isOddTurn = (this.turn % 2) != 0;
-
-        /* Security mechanism to avoid the deadlock that happens when the only
-         * handle left in one round is the one the user owns in the other, which
-         * is the one he is not allowed to come back to.
-         * Reset this round ownership.
-         */
-        if (this.turn % n == 0) {
-            if (isOddTurn) this.oddOwnedHandle = -1;
-            else this.evenOwnedHandle = -1;
-        }
-
+    
+    public void recordResults(List<Integer> conflicts) {
+        int turn = this.turn - 1;
+        int move = this.lastMove;
         /*
          * If there are not conflicts, and the previous handle is not already
          * owned in the next turn, own it in this kind (even or odd) of turns.
          */
-        boolean hasConflicted = conflicts.size() != 0;
-        if (!hasConflicted) {
-            if (isOddTurn) {
-                if (this.oddOwnedHandle != this.lastMove)
-                    this.evenOwnedHandle = this.lastMove;
+        if (conflicts.size() == 0) {
+            if (turn % 2 == 0) {
+                this.evenOwnedHandle = move;
             } else {
-                if (this.evenOwnedHandle != this.lastMove)
-                    this.oddOwnedHandle = this.lastMove;
+                this.oddOwnedHandle = move;
+            }
+        } else if (conflicts.size() == 1) {
+            int other = conflicts.get(0) - 1;
+            // If we are just conflicting with one other player, we
+            // check to see if we have done that previously during the
+            // current 'round robin' of the handles. If so, we know
+            // that one of those handles must be free, so we restart the
+            // current 'round robin' at a random spot in hopes that one
+            // each will find the two spots.
+            if (turn % 2 == 1 && this.oddOwnedHandle == -1) {
+                if (this.seenPlayersOdd[other] != -1) {
+                    this.lastOddMove = this.oddStart + rand.nextInt(move - this.oddStart) - 1;
+                    this.lastEvenMove = (this.lastOddMove + (this.n / 2)) % this.n;
+                    Arrays.fill(this.seenPlayersEven, -1);
+                    Arrays.fill(this.seenPlayersOdd, -1);
+                    this.turnsSinceReset = 0;
+                } else {
+                    // If we havent seen the player before, just record where
+                    // we saw them
+                    this.seenPlayersOdd[other] = move;
+                }
+            } else if (turn % 2 == 0 && this.evenOwnedHandle == -1) {
+                if (this.seenPlayersEven[other] != -1) {
+                    this.lastEvenMove = this.evenStart + rand.nextInt(move - this.evenStart) - 1;
+                    this.lastOddMove = (this.lastEvenMove - (this.n / 2)) % this.n;
+                    Arrays.fill(this.seenPlayersEven, -1);
+                    Arrays.fill(this.seenPlayersOdd, -1);
+                    this.turnsSinceReset = 0;
+                } else {
+                    this.seenPlayersEven[other] = move;
+                }
             }
         }
+        
+        // If we have made it all the way back to where we started, then
+        // we must have conflicted with players who also do not own
+        // handles. In this case, start at a random point so that the
+        // players we overlap with on each handle will be different
+        if (this.turnsSinceReset > 0 && this.turnsSinceReset % this.n == 0) {
+            this.lastOddMove = rand.nextInt(this.n);
+            this.lastEvenMove = (this.lastOddMove + (this.n / 2)) % this.n;
+            this.turnsSinceReset = 0;
+        }
+        
+        // Finally, deadlock prevention. If we own a handle on one round
+        // and havent converged, give up ownership and try to converge
+        // again. I think there is probably something more intelligent we
+        // could do here...
+        if ((this.oddOwnedHandle == -1) != (this.evenOwnedHandle == -1) && turn > 0 && turn % (int) (this.n * RESET_COEF) == 0) {
+            this.oddOwnedHandle = -1;
+            this.oddOwnedHandle = -1;
+        }
+        this.turnsSinceReset++;
+    }
 
-        boolean hasOddOwnedHandle = this.oddOwnedHandle != -1;
-        boolean hasEvenOwnedHandle = this.evenOwnedHandle != -1;
-        if (isOddTurn) {
-            if (hasOddOwnedHandle) {
+    public int getMove(List<Integer> conflicts) {
+        if (this.turn == 0) {
+            return evenStart;
+        }
+        
+        if (this.turn == 1) {
+            return oddStart;
+        }
+        
+        /* If we own a handle for either parity, just do that */
+        if (this.turn % 2 == 1) {
+            if (this.oddOwnedHandle != -1) {
                 return this.oddOwnedHandle;
-            } else if (hasEvenOwnedHandle) {
+            } else if (this.evenOwnedHandle != -1) {
                 return this.chooseNextExcluding(this.evenOwnedHandle, conflicts);
             }
         } else {
-            if (hasEvenOwnedHandle) {
+            if (this.evenOwnedHandle != -1) {
                 return this.evenOwnedHandle;
-            } else if (hasOddOwnedHandle) {
+            } else if (this.oddOwnedHandle != -1) {
                 return this.chooseNextExcluding(this.oddOwnedHandle, conflicts);
             }
         }
+        
+        /* Otherwise, just go down the line... */
         return this.chooseNext(conflicts);
     }
 
@@ -111,7 +181,11 @@ public class Player implements escape.sim.Player {
     }
 
     public int chooseNext(List<Integer> conflicts) {
-        return this.chooseNextExcluding(-1, conflicts);
+        int move = (this.nextLastMove + 1) % this.n;
+        if (move == this.lastMove && conflicts.size() != 0) {
+            move = (move + 1) % n;
+        }
+        return move;
     }
 
     public int chooseNextExcluding(int excluding, List<Integer> conflicts) {
