@@ -53,6 +53,7 @@ public class Player implements escape.sim.Player {
     }
     
     public int getMove(List<Integer> conflicts) {
+        this.scaleWeights();
         if (this.turn == 0) 
             return 0;
          
@@ -194,5 +195,26 @@ public class Player implements escape.sim.Player {
             }
         }
         return randomIndex;
+    }
+
+    public void scaleWeights(){
+        if (this.turn%2==0){
+            if (totalWeightEven < 1){
+                totalWeightEven = 0;
+                for (int i=0; i<weightsEven.length; ++i){
+                    weightsEven[i] *= 1000;
+                    totalWeightEven += weightsEven[i];
+                }
+            }
+        }
+        else{
+            if (totalWeightOdd < 1){
+                totalWeightOdd = 0;
+                for (int i=0; i<weightsOdd.length; ++i){
+                    weightsOdd[i] *= 1000;
+                    totalWeightOdd += weightsOdd[i];
+                }
+            }
+        }
     }
 }
