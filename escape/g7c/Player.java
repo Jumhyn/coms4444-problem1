@@ -14,16 +14,12 @@ public class Player implements escape.sim.Player {
     private int n;
     private int lastMove;
     private int lastLastMove;
-    private ArrayList<Integer> moves;  // Represents the handles held in the previous turns. Zero-based.
-    private ArrayList<List<Integer>> conflictsPerRound;
     private double[] weightsEven;
     private double[] weightsOdd;
     private double totalWeightOdd = 0.0;
     private double totalWeightEven = 0.0;
     private int ownedEven = -1;
     private int ownedOdd = -1;
-    private int linearEven = 0;
-    private int linearOdd = 0;
 	
     public Player() {
         this.rand = new Random();
@@ -32,8 +28,6 @@ public class Player implements escape.sim.Player {
     public int init(int n) {
         this.turn = 0;
         this.n = n;
-        this.conflictsPerRound = new ArrayList<List<Integer>>();
-        this.moves = new ArrayList<Integer>();
         weightsEven = new double[n];
         weightsOdd = new double[n];
         for (int i=0; i<n; ++i){
@@ -49,7 +43,6 @@ public class Player implements escape.sim.Player {
         int move = this.getMove(conflicts);
         this.lastLastMove = this.lastMove;
         this.lastMove = move;
-        this.moves.add(move);
         this.turn++;
         return move + 1;
     }
