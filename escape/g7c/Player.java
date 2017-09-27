@@ -47,7 +47,9 @@ public class Player implements escape.sim.Player {
 
     public int getMove(List<Integer> conflicts) {
         boolean isFirstTurn = this.turn == 0;
+        boolean isSecondTurn = this.turn == 1;
         if (isFirstTurn) return 0;
+        if (isSecondTurn) return this.n / 2;
 
         boolean isOddTurn = (this.turn % 2) != 0;
 
@@ -57,9 +59,10 @@ public class Player implements escape.sim.Player {
          * other, which is the one he is not allowed to come back to.
          * Reset this round ownership.
          */
-        if (this.turn % (RESET_COEF*n) == 0) {
-            if (isOddTurn) this.oddOwnedHandle = -1;
-            else this.evenOwnedHandle = -1;
+        boolean hasHalfConverged = (this.oddOwnedHandle == -1) != (this.evenOwnedHandle == -1);
+        if (hasHalfConverged && this.turn % (RESET_COEF*n) == 0) {
+            this.oddOwnedHandle = -1;
+            this.evenOwnedHandle = -1;
         }
 
         /*
