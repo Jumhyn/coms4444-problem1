@@ -22,6 +22,8 @@ public class Player implements escape.sim.Player {
     private double totalWeightEven = 0.0;
     private int ownedEven = -1;
     private int ownedOdd = -1;
+    private int linearEven = 0;
+    private int linearOdd = 0;
 	
     public Player() {
         this.rand = new Random();
@@ -111,6 +113,7 @@ public class Player implements escape.sim.Player {
                 return randomHandle;
             }
         }
+
     }
     
     public int chooseRandom(List<Integer> conflicts) {
@@ -202,7 +205,7 @@ public class Player implements escape.sim.Player {
             if (totalWeightEven < 1){
                 totalWeightEven = 0;
                 for (int i=0; i<weightsEven.length; ++i){
-                    weightsEven[i] *= 1000;
+                    weightsEven[i] *= 100;
                     totalWeightEven += weightsEven[i];
                 }
             }
@@ -211,7 +214,7 @@ public class Player implements escape.sim.Player {
             if (totalWeightOdd < 1){
                 totalWeightOdd = 0;
                 for (int i=0; i<weightsOdd.length; ++i){
-                    weightsOdd[i] *= 1000;
+                    weightsOdd[i] *= 100;
                     totalWeightOdd += weightsOdd[i];
                 }
             }
