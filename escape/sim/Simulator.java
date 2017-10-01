@@ -95,8 +95,12 @@ public class Simulator {
                     success = false;
             }
 
+            int emptyHandles = 0;
             for (int i = 0; i < n; ++ i) {
-                if (handles.get(i).size() == 0) continue;
+                if (handles.get(i).size() == 0) {
+                    emptyHandles++;
+                    continue;
+                }
                 if (handles.get(i).size() == 1) {
                   players[handles.get(i).get(0)].release();
                 }
@@ -108,6 +112,8 @@ public class Simulator {
                     // System.out.println("\n grabbed handle " + i);
                 }
             }
+            System.out.printf("Turn: %d (%s), empty handles: %d\n",
+                turn, (turn%2==0? "even" : "odd"), emptyHandles);
 
             if (gui) gui(server, state(n, playerNames, handles, success ? -1 : fps, turn));
             if (success) {
